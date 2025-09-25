@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Dashboard } from "@/components/Dashboard";
 import CustomerTable from "@/components/CustomerTable";
 import { CustomerForm } from "@/components/CustomerForm";
@@ -6,27 +8,58 @@ import { BulkCustomerForm } from "@/components/BulkCustomerForm";
 import { BulkEditForm } from "@/components/BulkEditForm";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users, Plus, UserPlus, Edit } from "lucide-react";
+import { BarChart3, Users, Plus, UserPlus, Edit, Trash2 } from "lucide-react";
 
 interface Customer {
   id: number;
   customer_name: string;
-  mobile_number: number;
-  line_type: number;
+  mobile_number: string;
+  line_type: string;
   charging_date: string | null;
   payment_status: string;
   monthly_price: number | null;
   renewal_status: string;
+  arrival_time: string | null;
+  provider: string | null;
+  ownership: string | null;
+  notes: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
 export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [showBulkEditForm, setShowBulkEditForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching customers:', error);
+        return;
+      }
+
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddCustomer = () => {
     setEditingCustomer(null);
@@ -64,6 +97,7 @@ export const AdminDashboard = () => {
     setShowBulkForm(false);
     setShowBulkEditForm(false);
     setEditingCustomer(null);
+    fetchCustomers(); // Refresh the customer list
   };
 
   const handleCancelForm = () => {
@@ -71,6 +105,24 @@ export const AdminDashboard = () => {
     setShowBulkForm(false);
     setShowBulkEditForm(false);
     setEditingCustomer(null);
+  };
+
+  const handleDeleteCustomer = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting customer:', error);
+        return;
+      }
+
+      fetchCustomers(); // Refresh the customer list
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+    }
   };
 
   return (
@@ -95,11 +147,25 @@ export const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="customers" className="mt-8">
+            <div className="flex flex-wrap gap-4 mb-6">
+              <Button onClick={handleAddCustomer} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                إضافة عميل
+              </Button>
+              <Button onClick={handleAddBulkCustomers} variant="outline" className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                إضافة عملاء متعددين
+              </Button>
+              <Button onClick={handleBulkEdit} variant="outline" className="flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                تعديل متعدد
+              </Button>
+            </div>
             <CustomerTable 
-              onAddCustomer={handleAddCustomer}
-              onAddBulkCustomers={handleAddBulkCustomers}
-              onBulkEdit={handleBulkEdit}
-              onEditCustomer={handleEditCustomer}
+              customers={customers}
+              onEdit={handleEditCustomer}
+              onDelete={handleDeleteCustomer}
+              loading={loading}
             />
           </TabsContent>
         </Tabs>
