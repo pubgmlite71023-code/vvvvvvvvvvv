@@ -23,7 +23,7 @@ interface Customer {
 }
 
 interface CustomerTableProps {
-  customers: Customer[];
+  customers?: Customer[];
   onEdit: (customer: Customer) => void;
   onDelete: (id: number) => void;
   loading?: boolean;
@@ -32,7 +32,7 @@ interface CustomerTableProps {
 export default function CustomerTable({ customers, onEdit, onDelete, loading = false }: CustomerTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredCustomers = customers.filter(customer =>
+  const filteredCustomers = (customers || []).filter(customer =>
     customer.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.mobile_number.includes(searchTerm)
   );
