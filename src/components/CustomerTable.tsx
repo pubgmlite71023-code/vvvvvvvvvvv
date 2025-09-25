@@ -32,10 +32,10 @@ interface CustomerTableProps {
 export default function CustomerTable({ customers, onEdit, onDelete, loading = false }: CustomerTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredCustomers = customers?.filter(customer =>
+  const filteredCustomers = customers.filter(customer =>
     customer.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.mobile_number.includes(searchTerm)
-  ) || [];
+  );
 
   const getPaymentStatusBadge = (status: string) => {
     const variant = status === 'مدفوع' ? 'default' : 'destructive';
